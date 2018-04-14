@@ -1,0 +1,269 @@
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script src="https://unpkg.com/vue-router"></script>
+  <link rel="stylesheet" href="vangotron.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.0/moment.js"></script>
+</head>
+<body>
+
+<div id="app">
+  <div v-cloak>
+  <div v-if="false"></div>
+
+  <div v-else-if="currentUserObj.id" id="main">
+    <div id="matches-table" class="container">
+      <header-row>
+      <div class="row" style="margin-bottom: 40px">
+
+        <div class="col-2">
+          <div style="display: inline-block">
+            <img src='logo.jpg' class="main-logo" @click="getMatches()">
+          </div>
+        </div>
+        <div class="col-8">
+
+            <div class="row" style="font-size: 24px; font-weight: bold; text-align: center">OWL Dosvidooley Vangothrone</div>
+            <div class="row" style="font-size: 20px; text-align: center">Hello, {{ currentUserObj.name }}!</div>
+            <div class="row" style="margin-top: 5px">
+              <div class="btn-group btn-group-toggle btn-group-sm" role="group" aria-label="Choose Week">
+                  <label v-for="index in maxWeek" @click="currentWeek = index" class="btn btn-light" v-bind:class="{active: index == currentWeek}">
+                    <input type="radio" name="options" id="option{{index}}" autocomplete="off" checked> Week {{ index }}
+                  </label>
+              </div>
+            </div>
+
+        </div>
+        <div class="col-md-1">
+          <button class="btn btn-sm btn-outline-info" @click="logout()">Logout</button>
+        </div>
+
+      </div>
+
+
+      <div class="row">
+        <div class="col-md-12">
+          <div class="row table-header" style="text-align: center">
+            <div style="display: inline-block" class="col-md-2">Teams</div>
+            <div style="display: inline-block" class="col-md-2">Date</div>
+            <div style="display: inline-block" class="col-md-1" v-for="user in sorted_users">{{ user.name }} ({{ getUserScore(user, matches_computed)}})</div>
+            <div style="display: inline-block" class="col-md-1">Actual Result</div>
+          </div>
+
+          <div v-for="match in matches_computed" v-if="match.matchWeek == currentWeek" class="row">
+
+            <span v-if="(currentUserObj.isAdmin)" class="editable-match" @click="match.editingInfo = true"></span>
+            <div v-if="!match.editingInfo" style="display: inline-block" class="match-teams col-2">
+              <img class="team-logo" v-bind:src="teams[match.teams[0]] ? teams[match.teams[0]].iconUrl : ''" v-bind:title="teams[match.teams[0]] ? teams[match.teams[0]].name : ''">
+              {{ teams[match.teams[0]] ? teams[match.teams[0]].code : match.teams[0] }}
+              {{ teams[match.teams[1]] ? teams[match.teams[1]].code : match.teams[1] }}
+              <img class="team-logo" v-bind:src="teams[match.teams[1]] ? teams[match.teams[1]].iconUrl : ''" v-bind:title="teams[match.teams[1]] ? teams[match.teams[1]].name : ''">
+            </div>
+
+            <div v-if="!match.editingInfo" style="display: inline-block" class="match-date col-md-2">
+              {{ moment(match.date).format("D.MM.YYYY, HH:mm") }}
+              <div class="is-match-passed">
+                {{ match.isPast ? 'Already passed' : 'Yet to come'}}
+              </div>
+            </div>
+
+            <!-- <div v-for="prediction in match.predictions" style="display: inline-block" class="match-prediction col-md-1"> -->
+            <div v-if="!match.editingInfo" v-for="user in users" style="display: inline-block" class="match-prediction col-md-1">
+              <div v-for="prediction in match.predictions">
+                <div v-if="prediction.userId == user.id">
+                  <div v-if="(user.id == currentUserObj.id) || (match.isPast)">
+                    <div v-if="!prediction.editing">
+                      <span class="text" @click="if (prediction.userId == currentUserObj.id && !match.isPast) {enableEditing(prediction)}"
+                         v-bind:class="{ editable: prediction.userId == currentUserObj.id && !match.isPast, 'right-prediction': prediction.isResultGuessed, 'winner-guessed': prediction.isWinnerGuessed }">
+                         {{ prediction.score }}
+                      </span>
+                    </div>
+                    <div v-if="prediction.editing">
+
+                      <form>
+                        <div class="input-group">
+                        <input type="text" class="form-control form-control-sm" v-model="prediction.score">
+                        <div class="input-group-append">
+                          <button @click="(e) => {e.preventDefault(); saveEditPrediction(prediction, match.result, match.id)}" class="btn btn-outline-success btn-sm">&#10003;</button>
+                          <button @click="(e) => {e.preventDefault(); disableEditing(prediction)}" class="btn btn-outline-danger btn-sm" style="display">&#10007;</button>
+                        </div>
+                        </div>
+                      </form>
+
+                    </div>
+                  </div>
+                  <div v-else-if="matchHasUserPrediction(match, user.id)">
+                    &#9940;
+                  </div>
+                </div>
+              </div>
+              <div v-show="(!matchHasUserPrediction(match, currentUserObj.id) && currentUserObj.id == user.id && !match.isPast)" class="create-prediction-div">
+                <button @click="createPrediction(match, currentUserObj.id);" class="btn btn-sm btn-info">+</button>
+              </div>
+            </div>
+
+            <div v-if="!match.editingInfo" style="display: inline-block" class="match-results col-1">
+
+              <div v-if="!match.editing">
+                <span class='text' v-bind:class="{ editable: (!match.resultFrozen && match.isPast) }" @click="if (!match.resultFrozen) enableEditing(match)">{{ match.result != '' ? match.result : 'TBD' }}</span>
+              </div>
+
+              <div v-if="match.editing">
+                <form>
+                  <div class="input-group">
+                    <input type="text" class="form-control form-control-sm" v-model="match.result">
+                    <div class="input-group-append">
+                      <button @click="(e) => {e.preventDefault(); saveEditResult(match)}" class="btn btn-outline-success btn-sm">&#10003;</button>
+                      <button @click="(e) => {e.preventDefault(); disableEditing(match)}" class="btn btn-outline-danger btn-sm">&#10007;</button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+            </div>
+            <div v-if="(currentUserObj.isAdmin) && (match.editingInfo)">
+              <form class="form-inline">
+                  <input style="width: 60px; margin-right: 5px;" class="input-sm form-control" v-model.lazy="match.teams[0]"></input>
+                  <input style="width: 60px" class="input-sm form-control" v-model.lazy="match.teams[1]"></input>
+                  <div class="input-group date" style="margin-left: 45px;" id="datetimepicker2" data-target-input="nearest">
+                    <input type="text" class="form-control datetimepicker-input" id="input-datepicker2" v-model="match.date" data-target="#datetimepicker2"/>
+                    <div class="input-group-append" data-target="#datetimepicker2" data-toggle="datetimepicker">
+                      <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                    </div>
+                  </div>
+
+
+
+                <button style="margin-left: 10px" @click="(e) => {e.preventDefault(); editMatch(match); match.editingInfo = false}" class="btn btn-success btn-sm">Save</button>
+                <button style="margin-left: 10px" class="btn btn-danger btn-sm" @click="(e) => {e.preventDefault(); match.editingInfo = false;}">Cancel</button>
+              </form>
+            </div>
+          </div>
+          <div v-if="(currentUserObj.isAdmin) && (addMatchFormVisible)" class="form-group row" style="margin-left: 20px;">
+
+
+                    <form class="form-inline">
+                        <input style="width: 60px; margin-right: 5px;" class="input-sm form-control" v-model="addMatchTeam1"></input>
+                        <input style="width: 60px" class="input-sm form-control" v-model="addMatchTeam2"></input>
+                        <div class="input-group date" style="margin-left: 45px;" id="datetimepicker1" data-target-input="nearest">
+                          <input type="text" class="form-control datetimepicker-input" id="input-datepicker1" v-model="addMatchDateTime" data-target="#datetimepicker1"/>
+                          <div class="input-group-append" data-target="#datetimepicker1" data-toggle="datetimepicker">
+                            <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                          </div>
+                        </div>
+
+
+
+                      <button style="margin-left: 10px" @click="(e) => {e.preventDefault(); addMatch()}" class="btn btn-success btn-sm">Add!</button>
+                      <button style="margin-left: 10px" class="btn btn-danger btn-sm" @click="(e) => {e.preventDefault(); addMatchFormVisible = false;}">Cancel</button>
+                    </form>
+
+          </div>
+          <div v-if="(currentUserObj.isAdmin == true) && (!addMatchFormVisible)"><button class="btn btn-info btn-sm" @click="addMatchFormVisible = true;" style="margin-left: 15px;">Add Match</button></div>
+        </div>
+
+        <div v-if="false" class="col-md-2 users-table">
+          <ol>
+            <li v-for="user in sorted_users">
+              {{user.name}}
+            </li>
+          </ol>
+        </div>
+
+      </div> <!--row-->
+      <div v-if="(currentUserObj.isAdmin)" class="row" style="margin-top: 80px;">
+        Become:
+        <div v-for="user in users" style="display: inline-block; margin: 4px;">
+          <button class="btn btn-primary" @click="currentUserObj.id=user.id; currentUserObj.name=user.name">{{ user.name }}</button>
+        </div>
+      </div>
+    </div> <!--container -->
+
+  </div>
+  <div v-else-if="($route.query.reg) && currentUserObj.id == 0">
+    <div class="container">
+      <div class="row">
+
+        <div class="absolute-center is-responsive">
+          <form>
+          <div class="logo-container"></div>
+          <h1>{{ $route.query.reg }}</h1>
+          <div class="form-group">
+            <span class="input-group-addon"><i class="glyphicon glyphicon-user"></i></span>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Enter your login"
+                v-model="registerCredentials.login"
+              >
+            </div>
+            <div class="form-group">
+              <span class="input-group-addon"><i class="glyphicon glyphicon-user"></i></span>
+                <input
+                  type="text"
+                  class="form-control"
+                  placeholder="Enter your shown username"
+                  v-model="registerCredentials.username"
+                >
+            </div>
+            <div class="form-group">
+              <input
+                type="password"
+                class="form-control"
+                placeholder="Enter your password"
+                v-model="registerCredentials.password"
+              >
+            </div>
+          <button class="btn btn-info" @click="sendRegisterForm()">Register!</button>
+        </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div v-else-if="(currentUserObj.id == 0)">
+    <div class="container">
+      <div class="row">
+        <div class="absolute-center is-responsive">
+          <form>
+          <div class="logo-container"></div>
+          <div class="form-group">
+            <span class="input-group-addon"><i class="glyphicon glyphicon-user"></i></span>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Enter your username"
+                v-model="credentials.login"
+              >
+            </div>
+            <div class="form-group">
+              <input
+                type="password"
+                class="form-control"
+                placeholder="Enter your password"
+                v-model="credentials.password"
+              >
+            </div>
+            <span style="color: red">{{ loginFormError }}</span>
+            <div>
+              <button class="btn btn-info" @click="(e) => {e.preventDefault(); sendLoginForm()}">Login</button>
+            </div>
+        </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div> <!-- app -->
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.0/locale/ru.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.0-alpha14/js/tempusdominus-bootstrap-4.min.js"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.0-alpha14/css/tempusdominus-bootstrap-4.min.css" />
+
+<script src="vangotron.js"></script>
+<!-- <script src="build/app.min.js"></script> -->
+</body>

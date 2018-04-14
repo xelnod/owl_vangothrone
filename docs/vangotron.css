@@ -1,0 +1,89 @@
+
+[v-cloak] { display: none; }
+
+span.editable::after {
+  content: "";
+  background-image: url('https://www.iconexperience.com/_img/o_collection_png/green_dark_grey/512x512/plain/edit.png');
+    background-size: 20px 20px;
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+}
+span.editable-match::after {
+  content: "";
+  position: absolute; left: -20px;
+  background-image: url('https://www.iconexperience.com/_img/o_collection_png/green_dark_grey/512x512/plain/edit.png');
+    background-size: 20px 20px;
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+}
+.right-prediction {
+  font-weight:bold;
+}
+.winner-guessed {
+  color: green;
+}
+img.team-logo {
+  width: auto;
+  height: 30px
+}
+div.match-prediction {
+  text-align: center
+}
+div.match-results {
+  text-align: center
+}
+
+div.match-teams {
+  text-align: center
+}
+div.is-match-passed {
+  font-size: 10px;
+}
+div.container {
+  margin: 40px;
+  max-width: 1600px;
+}
+div.table-header {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+.main-logo {
+  height: auto;
+  width: auto;
+  max-width: 150px;
+  max-height: 150px;
+}
+
+div#matches-table {
+  margin-left: 100px;
+}
+
+.users-table {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.absolute-center {
+  margin: auto;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+}
+
+.absolute-center.is-responsive {
+  width: 50%;
+  height: 50%;
+  min-width: 200px;
+  max-width: 400px;
+  padding: 40px;
+}
+
+.logo-container {
+  margin: auto;
+  margin-bottom: 10px;
+  width:150px;
+  height:112px;
+  background-image:url(logo.jpg);
+  background-size: 150px 112px;
+}
