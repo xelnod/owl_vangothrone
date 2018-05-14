@@ -17,7 +17,7 @@ var moment = require('moment')
 Vue.mixin({
   methods: {
     getCurrentStageStartDate: function () {
-      return moment('2018-04-03', 'YYYY-MM-DD')
+      return moment('2018-05-15', 'YYYY-MM-DD')
     },
     weekNumber: function (m) {
       return Math.floor(moment(m).diff(this.getCurrentStageStartDate(), 'days') / 7) + 1
