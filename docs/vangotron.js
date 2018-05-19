@@ -14,7 +14,7 @@ var data_teams = {
   "NYE": {
     "name": "New York Excel",
     "code": "NYE",
-    "iconUrl": "icons/new-york-excelsior.webp"
+    "iconUrl": "icons/excel.png"
   },
   "DAL": {
     "name": "Dallas Fuel",
