@@ -126,7 +126,7 @@ var dataTeams = {
   'NYE': {
     'name': 'New York Excel',
     'code': 'NYE',
-    'iconUrl': '/static/icons/nyxl.png'
+    'iconUrl': '/static/icons/excel.png'
   },
   'DAL': {
     'name': 'Dallas Fuel',
